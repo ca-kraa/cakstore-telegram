@@ -27,6 +27,14 @@ export class CakstoreIntegrationService {
     return raw.replace(/\/+$/, '');
   }
 
+  public static getPublicStoreUrl(): string {
+    const raw = config.cakstore.apiUrl || 'https://store.cakwe.id';
+    if (raw.includes('localhost') || raw.includes('127.0.0.1')) {
+      return 'https://store.cakwe.id';
+    }
+    return raw.replace(/\/+$/, '');
+  }
+
   private static getHeaders(): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -90,7 +98,8 @@ export class CakstoreIntegrationService {
 
       const finalTotal = data.total_amount ?? data.totalPrice ?? data.total ?? data.item_price ?? data.price ?? 0;
       const currency = data.currency_code || data.currencyCode || 'IDR';
-      const confirmUrl = data.confirmationUrl || data.paymentUrl || `${baseUrl}/order-confirmation?orderId=${encodeURIComponent(cleanId)}`;
+      const publicBase = this.getPublicStoreUrl();
+      const confirmUrl = data.confirmationUrl || data.paymentUrl || `${publicBase}/order-confirmation?orderId=${encodeURIComponent(cleanId)}`;
 
       return {
         id: (data.id || data.orderId || cleanId) as string,
@@ -149,7 +158,8 @@ export class CakstoreIntegrationService {
 
     const statusUpper = (order.status || '').toUpperCase();
     const cleanId = this.cleanOrderId(order.id);
-    const link = order.confirmationUrl || `${this.getBaseUrl()}/order-confirmation?orderId=${cleanId}`;
+    const publicBase = this.getPublicStoreUrl();
+    const link = order.confirmationUrl || `${publicBase}/order-confirmation?orderId=${cleanId}`;
 
     // 1. Stock Confirmed / Ready for Payment
     if (statusUpper === 'STOCK_CONFIRMED' || statusUpper === 'WAITING_PAYMENT') {
@@ -173,7 +183,8 @@ export class CakstoreIntegrationService {
   public static getOrderButtons(order: CakstoreOrder): { inline_keyboard: Array<Array<{ text: string; url?: string; callback_data?: string }>> } {
     const statusUpper = (order.status || '').toUpperCase();
     const cleanId = this.cleanOrderId(order.id);
-    const link = order.confirmationUrl || `${this.getBaseUrl()}/order-confirmation?orderId=${cleanId}`;
+    const publicBase = this.getPublicStoreUrl();
+    const link = order.confirmationUrl || `${publicBase}/order-confirmation?orderId=${cleanId}`;
 
     if (statusUpper === 'STOCK_CONFIRMED' || statusUpper === 'WAITING_PAYMENT') {
       return {
@@ -190,7 +201,7 @@ export class CakstoreIntegrationService {
       return {
         inline_keyboard: [
           [
-            { text: '🛒 Belanja Lagi', url: this.getBaseUrl() },
+            { text: '🛒 Belanja Lagi', url: publicBase },
           ],
         ],
       };
@@ -200,7 +211,7 @@ export class CakstoreIntegrationService {
       return {
         inline_keyboard: [
           [
-            { text: '🛒 Lihat Produk Lain', url: this.getBaseUrl() },
+            { text: '🛒 Lihat Produk Lain', url: publicBase },
           ],
         ],
       };

@@ -305,37 +305,44 @@ export class TelegramPollingService {
       // Handle Cancel Order Button
       if (data.startsWith('cancel_order:')) {
         const orderId = data.replace('cancel_order:', '').trim();
-        await this.client.answerCallbackQuery(cq.id, { text: 'Pesanan sedang dibatalkan...' });
+        await this.client.answerCallbackQuery(cq.id, { text: 'Pesanan berhasil dibatalkan.' });
 
         // Call Cakstore API
         await CakstoreIntegrationService.cancelOrder(orderId);
 
-        const cancelMessageText = `🚫 <b>PESANAN DIBATALKAN / ORDER CANCELLED</b>\n━━━━━━━━━━━━━━━━━━━━\n🆔 <b>ID Transaksi:</b> <code>${orderId}</code>\n📊 <b>Status:</b> <b>Dibatalkan oleh Pembeli</b>\n━━━━━━━━━━━━━━━━━━━━\nPesanan Anda telah berhasil dibatalkan secara langsung.\n<b>Terima kasih telah menggunakan layanan Cakstore!</b>\n━━━━━━━━━━━━━━━━━━━━\n<i>Cakstore Team</i>`;
+        const cancelMessageText = `🚫 <b>Pesanan Anda telah dibatalkan. Terima kasih!</b>\n━━━━━━━━━━━━━━━━━━━━\n🆔 <b>ID Transaksi:</b> <code>${orderId}</code>\n📊 <b>Status:</b> <b>Dibatalkan oleh Pembeli</b>\n━━━━━━━━━━━━━━━━━━━━\nPesanan Anda telah berhasil dibatalkan dari sistem Cakstore.`;
 
-        const newButtons = {
-          inline_keyboard: [
-            [
-              { text: '🛒 Belanja Lagi', url: CakstoreIntegrationService.getBaseUrl() },
-            ],
-          ],
-        };
-
+        // Delete the previous order detail message so chat is clean
         if (messageId) {
           try {
-            await this.client.editMessageText(chatId, messageId, cancelMessageText, {
-              parse_mode: 'HTML',
-              reply_markup: newButtons,
-            });
+            await this.client.deleteMessage(chatId, messageId);
           } catch {
-            await this.client.sendMessage(chatId, cancelMessageText, { parse_mode: 'HTML', reply_markup: newButtons });
+            // If delete not allowed, edit instead
+            try {
+              await this.client.editMessageText(chatId, messageId, cancelMessageText, {
+                parse_mode: 'HTML',
+              });
+              await MessageService.recordOutgoingMessage({
+                conversationId: conversation.id,
+                senderType: 'BOT',
+                text: cancelMessageText,
+              });
+              return;
+            } catch {
+              // Ignored
+            }
           }
-        } else {
-          await this.client.sendMessage(chatId, cancelMessageText, { parse_mode: 'HTML', reply_markup: newButtons });
         }
+
+        // Send clean cancellation notice
+        const sentTelegram = await this.client.sendMessage(chatId, cancelMessageText, {
+          parse_mode: 'HTML',
+        });
 
         // Record outgoing bot message in database
         await MessageService.recordOutgoingMessage({
           conversationId: conversation.id,
+          telegramMessageId: sentTelegram.message_id,
           senderType: 'BOT',
           text: cancelMessageText,
         });

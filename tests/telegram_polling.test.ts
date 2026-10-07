@@ -86,8 +86,9 @@ describe('TelegramClient & TelegramPollingService', () => {
     const uniqueMsgId = Math.floor(Math.random() * 900000) + 100000;
 
     const answerCallbackSpy = vi.spyOn(mockClient, 'answerCallbackQuery').mockResolvedValue(true);
-    const editMessageSpy = vi.spyOn(mockClient, 'editMessageText').mockResolvedValue({
-      message_id: uniqueMsgId,
+    const deleteMessageSpy = vi.spyOn(mockClient, 'deleteMessage').mockResolvedValue(true);
+    const sendMessageSpy = vi.spyOn(mockClient, 'sendMessage').mockResolvedValue({
+      message_id: uniqueMsgId + 1,
       date: Math.floor(Date.now() / 1000),
       text: 'Cancelled',
     });
@@ -109,10 +110,10 @@ describe('TelegramClient & TelegramPollingService', () => {
     await pollingService.processUpdate(mockCallbackUpdate);
 
     expect(answerCallbackSpy).toHaveBeenCalledWith('cq_12345', expect.any(Object));
-    expect(editMessageSpy).toHaveBeenCalledWith(
+    expect(deleteMessageSpy).toHaveBeenCalledWith(uniqueChatId, uniqueMsgId);
+    expect(sendMessageSpy).toHaveBeenCalledWith(
       uniqueChatId,
-      uniqueMsgId,
-      expect.stringContaining('PESANAN DIBATALKAN'),
+      expect.stringContaining('Pesanan Anda telah dibatalkan'),
       expect.any(Object)
     );
   });
