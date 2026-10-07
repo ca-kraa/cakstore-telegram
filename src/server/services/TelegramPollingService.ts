@@ -165,7 +165,7 @@ export class TelegramPollingService {
           this.offset > 0 ? this.offset : undefined,
           100,
           this.pollingTimeout,
-          ['message', 'edited_message'],
+          ['message', 'edited_message', 'callback_query'],
           signal
         );
 

@@ -79,4 +79,41 @@ describe('TelegramClient & TelegramPollingService', () => {
       })
     );
   });
+
+  it('processes callback_query when user clicks Batalkan Pesanan button', async () => {
+    const pollingService = new TelegramPollingService(mockClient, 30);
+    const uniqueChatId = Math.floor(Math.random() * 900000) + 100000;
+    const uniqueMsgId = Math.floor(Math.random() * 900000) + 100000;
+
+    const answerCallbackSpy = vi.spyOn(mockClient, 'answerCallbackQuery').mockResolvedValue(true);
+    const editMessageSpy = vi.spyOn(mockClient, 'editMessageText').mockResolvedValue({
+      message_id: uniqueMsgId,
+      date: Math.floor(Date.now() / 1000),
+      text: 'Cancelled',
+    });
+
+    const mockCallbackUpdate: TelegramUpdate = {
+      update_id: 1002,
+      callback_query: {
+        id: 'cq_12345',
+        from: { id: uniqueChatId, is_bot: false, first_name: 'Test Customer' },
+        message: {
+          message_id: uniqueMsgId,
+          date: Math.floor(Date.now() / 1000),
+          chat: { id: uniqueChatId, type: 'private', first_name: 'Test Customer' },
+        },
+        data: 'cancel_order:CKS-1791338892-202610079UYDC7',
+      },
+    };
+
+    await pollingService.processUpdate(mockCallbackUpdate);
+
+    expect(answerCallbackSpy).toHaveBeenCalledWith('cq_12345', expect.any(Object));
+    expect(editMessageSpy).toHaveBeenCalledWith(
+      uniqueChatId,
+      uniqueMsgId,
+      expect.stringContaining('PESANAN DIBATALKAN'),
+      expect.any(Object)
+    );
+  });
 });
