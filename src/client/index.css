@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+:root {
+  --accent-color: #2563eb;
+  --accent-color-hover: #1d4ed8;
+  --accent-color-active: #1e40af;
+  --accent-color-subtle: #eff6ff;
+  --accent-color-border: #93c5fd;
+
+  --bg-primary: #f4f5f7;
+  --bg-card: #ffffff;
+  --border-black: #000000;
+  --text-black: #000000;
+  --text-muted: #64748b;
+}
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-black);
+  }
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Retro Technical Dot Grid Background */
+.bg-dot-grid {
+  background-color: #f4f5f7;
+  background-image: radial-gradient(#94a3b8 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* Neo-Brutalist Hard Shadows */
+.brutal-shadow {
+  box-shadow: 2px 2px 0px 0px #000000;
+}
+
+.brutal-shadow-sm {
+  box-shadow: 1px 1px 0px 0px #000000;
+}
+
+.brutal-shadow-md {
+  box-shadow: 3px 3px 0px 0px #000000;
+}
+
+.brutal-shadow-lg {
+  box-shadow: 4px 4px 0px 0px #000000;
+}
+
+.brutal-shadow-blue {
+  box-shadow: 3px 3px 0px 0px var(--accent-color);
+}
+
+/* Custom crisp technical scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-left: 1px solid #000000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #000000;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color);
+}

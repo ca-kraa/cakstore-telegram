@@ -1,0 +1,96 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum ConversationMode {
+  BOT
+  HUMAN
+  CLOSED
+}
+
+enum ConversationStatus {
+  OPEN
+  WAITING
+  CLOSED
+}
+
+enum MessageDirection {
+  INCOMING
+  OUTGOING
+}
+
+enum SenderType {
+  BOT
+  ADMIN
+  CUSTOMER
+}
+
+model Conversation {
+  id                  String             @id @default(uuid())
+  telegram_chat_id    String             @unique
+  telegram_user_id    String
+  username            String?
+  first_name          String?
+  last_name           String?
+  display_name        String
+  profile_photo       String?
+  mode                String             @default("BOT") // BOT, HUMAN, CLOSED
+  status              String             @default("OPEN") // OPEN, WAITING, CLOSED
+  unread_count        Int                @default(0)
+  last_message_preview String?
+  last_message_at     DateTime           @default(now())
+  created_at          DateTime           @default(now())
+  updated_at          DateTime           @updatedAt
+
+  messages            Message[]
+  deep_links          DeepLinkEvent[]
+
+  @@index([telegram_user_id])
+  @@index([last_message_at])
+  @@index([mode])
+  @@index([status])
+}
+
+model Message {
+  id                  String           @id @default(uuid())
+  conversation_id     String
+  telegram_message_id Int?
+  direction           String           // INCOMING, OUTGOING
+  sender_type         String           // BOT, ADMIN, CUSTOMER
+  message_type        String           @default("text")
+  text                String
+  metadata            String?          // JSON string for raw telegram object or metadata
+  sent_at             DateTime         @default(now())
+  created_at          DateTime         @default(now())
+  updated_at          DateTime         @updatedAt
+
+  conversation        Conversation     @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+
+  @@unique([conversation_id, telegram_message_id])
+  @@index([conversation_id])
+  @@index([sent_at])
+}
+
+model DeepLinkEvent {
+  id                  String           @id @default(uuid())
+  conversation_id     String
+  telegram_user_id    String
+  parameter           String
+  created_at          DateTime         @default(now())
+
+  conversation        Conversation     @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+
+  @@index([conversation_id])
+  @@index([telegram_user_id])
+}
+
+model BotState {
+  key                 String           @id
+  value               String
+  updated_at          DateTime         @updatedAt
+}
