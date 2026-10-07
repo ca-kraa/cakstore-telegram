@@ -269,6 +269,7 @@ export class TelegramPollingService {
       if (ruleResult.shouldReply && ruleResult.replyText) {
         try {
           const sentTelegram = await this.client.sendMessage(chat.id, ruleResult.replyText, {
+            parse_mode: 'HTML',
             reply_markup: ruleResult.replyMarkup,
           });
 
@@ -309,13 +310,12 @@ export class TelegramPollingService {
         // Call Cakstore API
         await CakstoreIntegrationService.cancelOrder(orderId);
 
-        const cancelMessageText = `PESANAN DIBATALKAN / ORDER CANCELLED\n----------------------------------------\nID Transaksi: ${orderId}\nStatus: Dibatalkan oleh Pembeli\n\nPesanan Anda telah berhasil dibatalkan secara langsung.\nTerima kasih telah menggunakan layanan Cakstore!\n----------------------------------------\nCakstore Team`;
+        const cancelMessageText = `🚫 <b>PESANAN DIBATALKAN / ORDER CANCELLED</b>\n━━━━━━━━━━━━━━━━━━━━\n🆔 <b>ID Transaksi:</b> <code>${orderId}</code>\n📊 <b>Status:</b> <b>Dibatalkan oleh Pembeli</b>\n━━━━━━━━━━━━━━━━━━━━\nPesanan Anda telah berhasil dibatalkan secara langsung.\n<b>Terima kasih telah menggunakan layanan Cakstore!</b>\n━━━━━━━━━━━━━━━━━━━━\n<i>Cakstore Team</i>`;
 
         const newButtons = {
           inline_keyboard: [
             [
-              { text: '🛒 Belanja Lagi', url: 'https://store.cakwe.id' },
-              { text: '💬 Hubungi Admin', callback_data: 'talk_admin' },
+              { text: '🛒 Belanja Lagi', url: CakstoreIntegrationService.getBaseUrl() },
             ],
           ],
         };
@@ -323,13 +323,14 @@ export class TelegramPollingService {
         if (messageId) {
           try {
             await this.client.editMessageText(chatId, messageId, cancelMessageText, {
+              parse_mode: 'HTML',
               reply_markup: newButtons,
             });
           } catch {
-            await this.client.sendMessage(chatId, cancelMessageText, { reply_markup: newButtons });
+            await this.client.sendMessage(chatId, cancelMessageText, { parse_mode: 'HTML', reply_markup: newButtons });
           }
         } else {
-          await this.client.sendMessage(chatId, cancelMessageText, { reply_markup: newButtons });
+          await this.client.sendMessage(chatId, cancelMessageText, { parse_mode: 'HTML', reply_markup: newButtons });
         }
 
         // Record outgoing bot message in database

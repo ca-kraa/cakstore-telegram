@@ -15,19 +15,14 @@ export interface CakstoreOrder {
   status: 'PENDING' | 'CHECKING' | 'STOCK_CONFIRMED' | 'PAID' | 'COMPLETED' | 'OUT_OF_STOCK' | 'CANCELLED' | string;
   items?: CakstoreOrderItem[];
   totalPrice?: number;
-  total?: number;
   currencyCode?: string;
-  currency_code?: string;
   confirmationUrl?: string;
-  paymentUrl?: string;
   name?: string;
-  contactMethod?: string;
-  contactValue?: string;
   createdAt?: string;
 }
 
 export class CakstoreIntegrationService {
-  private static getBaseUrl(): string {
+  public static getBaseUrl(): string {
     const raw = config.cakstore.apiUrl || 'https://store.cakwe.id';
     return raw.replace(/\/+$/, '');
   }
@@ -71,16 +66,42 @@ export class CakstoreIntegrationService {
 
       const json = (await response.json()) as Record<string, any>;
       const data = (json.data || json) as Record<string, any>;
+
+      const itemsList: CakstoreOrderItem[] = [];
+      if (Array.isArray(data.items) && data.items.length > 0) {
+        for (const item of data.items) {
+          const pName = item.product_name_snapshot || item.name || '';
+          const iName = item.item_name_snapshot || item.variantName || item.itemId || '';
+          const displayName = pName && iName ? `${pName} — ${iName}` : (pName || iName || 'Item Digital');
+          itemsList.push({
+            itemId: item.item_id || item.itemId || item.id,
+            name: displayName,
+            price: item.price_snapshot || item.price || item.subtotal,
+            quantity: item.quantity || 1,
+          });
+        }
+      } else if (data.item_name) {
+        itemsList.push({
+          name: data.item_name,
+          price: data.item_price || data.total_amount,
+          quantity: 1,
+        });
+      }
+
+      const finalTotal = data.total_amount ?? data.totalPrice ?? data.total ?? data.item_price ?? data.price ?? 0;
+      const currency = data.currency_code || data.currencyCode || 'IDR';
+      const confirmUrl = data.confirmationUrl || data.paymentUrl || `${baseUrl}/order-confirmation?orderId=${encodeURIComponent(cleanId)}`;
+
       return {
         id: (data.id || data.orderId || cleanId) as string,
         orderNumber: (data.orderNumber || data.id || cleanId) as string,
         status: (data.status || 'PENDING') as string,
-        items: (data.items || data.orderItems || []) as CakstoreOrderItem[],
-        totalPrice: (data.totalPrice || data.total || data.price) as number | undefined,
-        currencyCode: (data.currencyCode || data.currency_code || 'IDR') as string,
-        confirmationUrl: (data.confirmationUrl || data.paymentUrl) as string | undefined,
-        name: (data.name || data.customerName) as string | undefined,
-        createdAt: data.createdAt as string | undefined,
+        items: itemsList,
+        totalPrice: Number(finalTotal),
+        currencyCode: currency,
+        confirmationUrl: confirmUrl,
+        name: (data.customer_name || data.name || data.customerName) as string | undefined,
+        createdAt: data.created_at || data.createdAt,
       };
     } catch (err) {
       console.warn(`[CakstoreIntegrationService] Error fetching order ${cleanId}:`, err);
@@ -119,41 +140,42 @@ export class CakstoreIntegrationService {
 
   public static formatOrderMessage(order: CakstoreOrder): string {
     const itemsText = order.items && order.items.length > 0
-      ? order.items.map((i) => i.name || i.variantName || i.itemId || 'Item Digital').join(', ')
+      ? order.items.map((i) => i.name || i.variantName || 'Item Digital').join(', ')
       : 'Produk Digital Cakstore';
 
-    const formattedPrice = order.totalPrice
+    const formattedPrice = order.totalPrice !== undefined
       ? `${order.currencyCode || 'IDR'} ${order.totalPrice.toLocaleString('id-ID')}`
       : 'IDR 0';
 
     const statusUpper = (order.status || '').toUpperCase();
+    const cleanId = this.cleanOrderId(order.id);
+    const link = order.confirmationUrl || `${this.getBaseUrl()}/order-confirmation?orderId=${cleanId}`;
 
     // 1. Stock Confirmed / Ready for Payment
     if (statusUpper === 'STOCK_CONFIRMED' || statusUpper === 'WAITING_PAYMENT') {
-      const link = order.confirmationUrl || `https://store.cakwe.id/order-confirmation?orderId=${order.id}`;
-      return `STOK TERSEDIA & DIKONFIRMASI!\n----------------------------------------\nID Transaksi: ${order.id}\nStatus: Siap Dibayar / Ready for Payment\n🛍️ Item: ${itemsText}\n💵 Total: ${formattedPrice}\n\nStok pesanan Anda telah dikonfirmasi oleh Admin. Silakan lanjutkan pembayaran melalui tautan resmi berikut:\n🔗 ${link}\n----------------------------------------\nBatas waktu konfirmasi pembayaran adalah 5-10 menit setelah link dibuka.\n\nKetik BATAL ${order.id} jika ingin membatalkan.`;
+      return `✅ <b>STOK TERSEDIA & DIKONFIRMASI!</b>\n━━━━━━━━━━━━━━━━━━━━\n🆔 <b>ID Transaksi:</b> <code>${cleanId}</code>\n📊 <b>Status:</b> <b>Siap Dibayar</b> <i>/ Ready for Payment</i>\n🛍️ <b>Item:</b> <b>${itemsText}</b>\n💵 <b>Total:</b> <b>${formattedPrice}</b>\n━━━━━━━━━━━━━━━━━━━━\nStok pesanan Anda telah dikonfirmasi oleh Admin. Silakan lanjutkan pembayaran melalui tautan resmi berikut:\n🔗 <a href="${link}"><b>Klik Di Sini untuk Melanjutkan Pembayaran</b></a>\n━━━━━━━━━━━━━━━━━━━━\n<i>Batas waktu konfirmasi pembayaran adalah 5-10 menit setelah link dibuka.</i>`;
     }
 
     // 2. Completed / Order Finished
     if (statusUpper === 'COMPLETED' || statusUpper === 'SUCCESS' || statusUpper === 'DELIVERED') {
-      return `PESANAN SELESAI / ORDER COMPLETED\n----------------------------------------\nID Transaksi: ${order.id}\n🛍️ Item: ${itemsText}\n\nPesanan Anda telah berhasil diselesaikan. Detail produk / akun telah dikirimkan.\nTerima kasih telah berbelanja di Cakstore!\n----------------------------------------\nCakstore Team`;
+      return `🎉 <b>PESANAN SELESAI / ORDER COMPLETED</b>\n━━━━━━━━━━━━━━━━━━━━\n🆔 <b>ID Transaksi:</b> <code>${cleanId}</code>\n🛍️ <b>Item:</b> <b>${itemsText}</b>\n━━━━━━━━━━━━━━━━━━━━\nPesanan Anda telah berhasil diselesaikan. Detail produk / akun telah dikirimkan.\n<b>Terima kasih telah berbelanja di Cakstore!</b>\n━━━━━━━━━━━━━━━━━━━━\n<i>Cakstore Team</i>`;
     }
 
     // 3. Out of Stock / Cancelled
     if (statusUpper === 'OUT_OF_STOCK' || statusUpper === 'CANCELLED' || statusUpper === 'EXPIRED') {
-      return `STOK HABIS / OUT OF STOCK\n----------------------------------------\nID Transaksi: ${order.id}\n\nMohon maaf, produk pada pesanan ini saat ini sedang habis atau pesanan telah dibatalkan.\n----------------------------------------\nCakstore Team`;
+      return `⚠️ <b>STOK HABIS / OUT OF STOCK</b>\n━━━━━━━━━━━━━━━━━━━━\n🆔 <b>ID Transaksi:</b> <code>${cleanId}</code>\n━━━━━━━━━━━━━━━━━━━━\nMohon maaf, produk pada pesanan ini saat ini sedang habis atau pesanan telah dibatalkan.\n━━━━━━━━━━━━━━━━━━━━\n<i>Cakstore Team</i>`;
     }
 
     // 4. Default Checking by Admin / Pending
-    return `Detail Pesanan / Order Detail\n----------------------------------------\nID Transaksi: ${order.id}\nStatus: Sedang Dicek Admin (Checking by Admin)\nItem: ${itemsText}\nTotal: ${formattedPrice}\n----------------------------------------\nPesanan Anda telah kami terima dan sedang diverifikasi oleh admin. Mohon tunggu informasi selanjutnya.\nYour order has been received and is being verified by admin. Please wait for the next update.\n\nKlik tombol di bawah untuk membatalkan pesanan.`;
+    return `📦 <b>Detail Pesanan / Order Detail</b>\n━━━━━━━━━━━━━━━━━━━━\n🆔 <b>ID Transaksi:</b> <code>${cleanId}</code>\n📊 <b>Status:</b> <b>Sedang Dicek Admin</b> <i>(Checking by Admin)</i>\n🛍️ <b>Item:</b> <b>${itemsText}</b>\n💵 <b>Total:</b> <b>${formattedPrice}</b>\n━━━━━━━━━━━━━━━━━━━━\nPesanan Anda telah kami terima dan sedang diverifikasi oleh admin. Mohon tunggu informasi selanjutnya.\n<i>Your order has been received and is being verified by admin. Please wait for the next update.</i>\n\nKlik tombol di bawah untuk membatalkan pesanan.`;
   }
 
   public static getOrderButtons(order: CakstoreOrder): { inline_keyboard: Array<Array<{ text: string; url?: string; callback_data?: string }>> } {
     const statusUpper = (order.status || '').toUpperCase();
     const cleanId = this.cleanOrderId(order.id);
+    const link = order.confirmationUrl || `${this.getBaseUrl()}/order-confirmation?orderId=${cleanId}`;
 
     if (statusUpper === 'STOCK_CONFIRMED' || statusUpper === 'WAITING_PAYMENT') {
-      const link = order.confirmationUrl || `https://store.cakwe.id/order-confirmation?orderId=${cleanId}`;
       return {
         inline_keyboard: [
           [
@@ -168,7 +190,7 @@ export class CakstoreIntegrationService {
       return {
         inline_keyboard: [
           [
-            { text: '🛒 Belanja Lagi', url: 'https://store.cakwe.id' },
+            { text: '🛒 Belanja Lagi', url: this.getBaseUrl() },
           ],
         ],
       };
@@ -178,7 +200,7 @@ export class CakstoreIntegrationService {
       return {
         inline_keyboard: [
           [
-            { text: '🛒 Lihat Produk Lain', url: 'https://store.cakwe.id' },
+            { text: '🛒 Lihat Produk Lain', url: this.getBaseUrl() },
           ],
         ],
       };
@@ -217,7 +239,7 @@ export class CakstoreIntegrationService {
       });
 
       return response.ok;
-    } catch (err) {
+    } catch {
       return false;
     }
   }
