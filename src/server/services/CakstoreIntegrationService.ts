@@ -145,7 +145,7 @@ export class CakstoreIntegrationService {
     }
 
     // 4. Default Checking by Admin / Pending
-    return `Detail Pesanan / Order Detail\n----------------------------------------\nID Transaksi: ${order.id}\nStatus: Sedang Dicek Admin (Checking by Admin)\nItem: ${itemsText}\nTotal: ${formattedPrice}\n----------------------------------------\nPesanan Anda telah kami terima dan sedang diverifikasi oleh admin. Mohon tunggu informasi selanjutnya.\nYour order has been received and is being verified by admin. Please wait for the next update.\n\nKlik tombol di bawah untuk membatalkan atau menghubungi admin.`;
+    return `Detail Pesanan / Order Detail\n----------------------------------------\nID Transaksi: ${order.id}\nStatus: Sedang Dicek Admin (Checking by Admin)\nItem: ${itemsText}\nTotal: ${formattedPrice}\n----------------------------------------\nPesanan Anda telah kami terima dan sedang diverifikasi oleh admin. Mohon tunggu informasi selanjutnya.\nYour order has been received and is being verified by admin. Please wait for the next update.\n\nKlik tombol di bawah untuk membatalkan pesanan.`;
   }
 
   public static getOrderButtons(order: CakstoreOrder): { inline_keyboard: Array<Array<{ text: string; url?: string; callback_data?: string }>> } {
@@ -160,9 +160,6 @@ export class CakstoreIntegrationService {
             { text: '💳 Bayar Sekarang', url: link },
             { text: '❌ Batalkan Pesanan', callback_data: `cancel_order:${cleanId}` },
           ],
-          [
-            { text: '💬 Hubungi Admin', callback_data: 'talk_admin' },
-          ],
         ],
       };
     }
@@ -172,7 +169,6 @@ export class CakstoreIntegrationService {
         inline_keyboard: [
           [
             { text: '🛒 Belanja Lagi', url: 'https://store.cakwe.id' },
-            { text: '💬 Hubungi Admin', callback_data: 'talk_admin' },
           ],
         ],
       };
@@ -183,7 +179,6 @@ export class CakstoreIntegrationService {
         inline_keyboard: [
           [
             { text: '🛒 Lihat Produk Lain', url: 'https://store.cakwe.id' },
-            { text: '💬 Hubungi Admin', callback_data: 'talk_admin' },
           ],
         ],
       };
@@ -194,7 +189,6 @@ export class CakstoreIntegrationService {
       inline_keyboard: [
         [
           { text: '❌ Batalkan Pesanan', callback_data: `cancel_order:${cleanId}` },
-          { text: '💬 Hubungi Admin', callback_data: 'talk_admin' },
         ],
       ],
     };

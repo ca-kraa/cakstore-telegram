@@ -43,7 +43,7 @@ export class BotRuleEngine {
 
         return {
           shouldReply: true,
-          replyText: `Detail Pesanan / Order Detail\n----------------------------------------\nID Transaksi: ${cleanParam}\nStatus: Sedang Dicek Admin (Checking by Admin)\nItem: Produk Digital Cakstore\n----------------------------------------\nPesanan Anda telah kami terima dan sedang diverifikasi oleh admin. Mohon tunggu informasi selanjutnya.\nYour order has been received and is being verified by admin. Please wait for the next update.\n\nKlik tombol di bawah untuk membatalkan atau berbicara dengan admin.`,
+          replyText: `Detail Pesanan / Order Detail\n----------------------------------------\nID Transaksi: ${cleanParam}\nStatus: Sedang Dicek Admin (Checking by Admin)\nItem: Produk Digital Cakstore\n----------------------------------------\nPesanan Anda telah kami terima dan sedang diverifikasi oleh admin. Mohon tunggu informasi selanjutnya.\nYour order has been received and is being verified by admin. Please wait for the next update.\n\nKlik tombol di bawah untuk membatalkan pesanan.`,
           deepLinkParam: cleanParam,
           replyMarkup: CakstoreIntegrationService.getOrderButtons(fallbackOrder),
         };
@@ -51,11 +51,10 @@ export class BotRuleEngine {
 
       return {
         shouldReply: true,
-        replyText: `Halo! Selamat datang di Cakstore Support.\n\nApakah kamu butuh bantuan? Silakan jelaskan keluhan kamu di sini atau kirimkan ID Transaksi pesanan kamu.\n\nKlik tombol di bawah jika ingin berbicara dengan admin.`,
+        replyText: `Halo! Selamat datang di Cakstore Support.\n\nApakah kamu butuh bantuan? Silakan jelaskan keluhan kamu di sini atau kirimkan ID Transaksi pesanan kamu.`,
         replyMarkup: {
           inline_keyboard: [
             [
-              { text: '💬 Hubungi Admin', callback_data: 'talk_admin' },
               { text: '🌐 Buka Cakstore', url: 'https://store.cakwe.id' },
             ],
           ],
@@ -83,7 +82,6 @@ export class BotRuleEngine {
             inline_keyboard: [
               [
                 { text: '🛒 Belanja Lagi', url: 'https://store.cakwe.id' },
-                { text: '💬 Hubungi Admin', callback_data: 'talk_admin' },
               ],
             ],
           },
@@ -114,7 +112,7 @@ export class BotRuleEngine {
       };
       return {
         shouldReply: true,
-        replyText: `Detail Pesanan / Order Detail\n----------------------------------------\nID Transaksi: ${orderId}\nStatus: Sedang Dicek Admin (Checking by Admin)\nItem: Produk Digital Cakstore\n----------------------------------------\nPesanan Anda telah kami terima dan sedang diverifikasi oleh admin. Mohon tunggu informasi selanjutnya.\n\nKlik tombol di bawah untuk membatalkan atau menghubungi admin.`,
+        replyText: `Detail Pesanan / Order Detail\n----------------------------------------\nID Transaksi: ${orderId}\nStatus: Sedang Dicek Admin (Checking by Admin)\nItem: Produk Digital Cakstore\n----------------------------------------\nPesanan Anda telah kami terima dan sedang diverifikasi oleh admin. Mohon tunggu informasi selanjutnya.\n\nKlik tombol di bawah untuk membatalkan pesanan.`,
         replyMarkup: CakstoreIntegrationService.getOrderButtons(fallbackOrder),
       };
     }
