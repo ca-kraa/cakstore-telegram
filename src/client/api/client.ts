@@ -87,7 +87,9 @@ export class RealtimeClient {
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/ws`;
+    const wsUrl = window.location.port === '58420'
+      ? `${protocol}//${window.location.hostname}:58421/ws`
+      : `${protocol}//${host}/ws`;
 
     this.ws = new WebSocket(wsUrl);
 
